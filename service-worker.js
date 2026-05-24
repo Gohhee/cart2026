@@ -1,4 +1,4 @@
-const CACHE_NAME = "cart-calculator-v4";
+const CACHE_NAME = "cart-calculator-v5";
 const ASSETS = [
   "./",
   "./index.html",
@@ -6,6 +6,7 @@ const ASSETS = [
   "./app.js",
   "./manifest.webmanifest",
   "./icon.svg",
+  "./robots.txt",
 ];
 
 self.addEventListener("install", (event) => {
