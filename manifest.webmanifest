@@ -1,0 +1,19 @@
+{
+  "name": "장바구니 계산기",
+  "short_name": "장바구니",
+  "description": "마트에서 계산 전 구매 금액과 계산대 금액 차이를 확인하는 장바구니 웹앱",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f7f3",
+  "theme_color": "#1f5e4f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

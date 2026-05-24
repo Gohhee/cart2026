@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1f5e4f" />
+    <title>장바구니 계산기</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">계산 전 총액</p>
+          <h1>장바구니 계산기</h1>
+        </div>
+        <button class="icon-button" id="install-button" type="button" hidden aria-label="앱 설치">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v12m0 0 4-4m-4 4-4-4" />
+            <path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" />
+          </svg>
+        </button>
+      </header>
+
+      <main>
+        <section class="summary-band" aria-label="장바구니 요약">
+          <div class="summary-cell primary">
+            <span>예상 결제액</span>
+            <strong id="estimated-total">0원</strong>
+          </div>
+          <div class="summary-cell">
+            <span>상품 합계</span>
+            <strong id="subtotal">0원</strong>
+          </div>
+          <div class="summary-cell">
+            <span>상품 수</span>
+            <strong id="item-count">0개</strong>
+          </div>
+        </section>
+
+        <section class="budget-band" aria-label="예산 비교">
+          <div class="field compact">
+            <label for="budget-amount">장바구니 예산</label>
+            <div class="input-wrap">
+              <input id="budget-amount" inputmode="numeric" type="number" min="0" step="100" placeholder="예: 50000" />
+              <span>원</span>
+            </div>
+          </div>
+          <div class="budget" id="budget-box" data-state="neutral">
+            <div>
+              <span id="budget-label">예산 비교</span>
+              <strong id="budget-value">0원</strong>
+            </div>
+            <p id="budget-note">예산을 입력하면 지금 담은 금액과 비교됩니다.</p>
+            <div class="budget-meter" aria-hidden="true"><span id="budget-meter-fill"></span></div>
+          </div>
+        </section>
+
+        <section class="comparison-band" aria-label="계산대 금액 비교">
+          <div class="field compact">
+            <label for="discount">할인/쿠폰</label>
+            <div class="input-wrap">
+              <input id="discount" inputmode="numeric" type="number" min="0" step="10" placeholder="0" />
+              <span>원</span>
+            </div>
+          </div>
+          <div class="field compact">
+            <label for="checkout-amount">계산대 금액</label>
+            <div class="input-wrap">
+              <input id="checkout-amount" inputmode="numeric" type="number" min="0" step="10" placeholder="0" />
+              <span>원</span>
+            </div>
+          </div>
+          <div class="difference" id="difference-box" data-state="neutral">
+            <div>
+              <span id="difference-label">차이</span>
+              <strong id="difference-value">0원</strong>
+            </div>
+            <p id="difference-note">계산대 금액을 입력하면 비교됩니다.</p>
+            <div class="difference-meter" aria-hidden="true"><span id="difference-meter-fill"></span></div>
+          </div>
+        </section>
+
+        <section class="workspace">
+          <form class="entry-panel" id="item-form" autocomplete="off">
+            <div class="panel-heading">
+              <h2 id="form-title">상품 추가</h2>
+              <button class="text-button subtle" id="cancel-edit" type="button" hidden>취소</button>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="item-name">상품명</label>
+                <input id="item-name" type="text" placeholder="예: 우유 1L" />
+              </div>
+              <div class="field">
+                <label for="item-barcode">라벨/바코드</label>
+                <input id="item-barcode" type="text" inputmode="numeric" placeholder="번호 입력" />
+              </div>
+              <div class="field">
+                <label for="item-price">가격</label>
+                <div class="input-wrap">
+                  <input id="item-price" type="number" inputmode="numeric" min="0" step="10" placeholder="0" required />
+                  <span>원</span>
+                </div>
+              </div>
+              <div class="field">
+                <label for="item-qty">수량</label>
+                <input id="item-qty" type="number" inputmode="decimal" min="0.1" step="0.1" value="1" required />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="item-note">메모</label>
+              <input id="item-note" type="text" placeholder="행사, 묶음 가격 등" />
+            </div>
+
+            <div class="capture-row">
+              <button class="tool-button" id="scan-barcode" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 7V5a1 1 0 0 1 1-1h2" />
+                  <path d="M17 4h2a1 1 0 0 1 1 1v2" />
+                  <path d="M20 17v2a1 1 0 0 1-1 1h-2" />
+                  <path d="M7 20H5a1 1 0 0 1-1-1v-2" />
+                  <path d="M7 8v8M10 8v8M14 8v8M17 8v8" />
+                </svg>
+                <span>바코드</span>
+              </button>
+              <button class="tool-button" id="capture-label" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
+                  <circle cx="12" cy="13" r="3" />
+                </svg>
+                <span>라벨 사진</span>
+              </button>
+              <button class="tool-button ghost" id="clear-photo" type="button" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m18 6-12 12" />
+                  <path d="m6 6 12 12" />
+                </svg>
+                <span>사진 삭제</span>
+              </button>
+            </div>
+
+            <div class="photo-preview" id="photo-preview" hidden>
+              <img id="photo-preview-img" alt="촬영한 라벨" />
+            </div>
+
+            <button class="submit-button" id="submit-item" type="submit">상품 추가</button>
+            <p class="form-message" id="form-message" role="status" aria-live="polite"></p>
+          </form>
+
+          <section class="cart-panel" aria-label="담은 상품">
+            <div class="panel-heading">
+              <h2>담은 상품</h2>
+              <div class="panel-actions">
+                <button class="icon-button subtle" id="copy-list" type="button" aria-label="목록 복사">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="9" y="9" width="11" height="11" rx="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                </button>
+                <button class="icon-button danger" id="clear-cart" type="button" aria-label="장바구니 비우기">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4h8v2" />
+                    <path d="m19 6-1 14H6L5 6" />
+                    <path d="M10 11v5M14 11v5" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="item-list" id="item-list"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div class="camera-modal" id="camera-modal" hidden>
+      <div class="camera-sheet" role="dialog" aria-modal="true" aria-labelledby="camera-title">
+        <div class="camera-header">
+          <h2 id="camera-title">카메라</h2>
+          <button class="icon-button" id="camera-close" type="button" aria-label="카메라 닫기">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m18 6-12 12" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="camera-frame">
+          <video id="camera-video" playsinline muted autoplay></video>
+          <div class="scan-line" aria-hidden="true"></div>
+        </div>
+        <canvas id="camera-canvas" hidden></canvas>
+        <p class="camera-status" id="camera-status" role="status" aria-live="polite"></p>
+        <button class="submit-button" id="camera-capture" type="button">촬영</button>
+      </div>
+    </div>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
