@@ -179,12 +179,15 @@ function handleItemListClick(event) {
   }
 
   if (action === "decrease") {
-    item.qty = roundQty(Math.max(0.1, item.qty - 1));
+    if (item.qty <= 1) {
+      removeItem(id);
+    } else {
+      item.qty = roundQty(item.qty - 1);
+    }
   }
 
   if (action === "remove") {
-    state.items = state.items.filter((candidate) => candidate.id !== id);
-    if (state.editingId === id) resetForm();
+    removeItem(id);
   }
 
   if (action === "edit") {
@@ -192,6 +195,11 @@ function handleItemListClick(event) {
   }
 
   persistAndRender();
+}
+
+function removeItem(id) {
+  state.items = state.items.filter((candidate) => candidate.id !== id);
+  if (state.editingId === id) resetForm();
 }
 
 function startEdit(item) {
