@@ -61,6 +61,9 @@ function mapElements() {
     "form-message",
     "item-list",
     "copy-list",
+    "export-md",
+    "import-md",
+    "import-file",
     "clear-cart",
     "camera-modal",
     "camera-title",
@@ -103,6 +106,9 @@ function bindEvents() {
   els.itemList.addEventListener("click", handleItemListClick);
   els.clearCart.addEventListener("click", clearCart);
   els.copyList.addEventListener("click", copyCartSummary);
+  els.exportMd.addEventListener("click", exportMarkdownBackup);
+  els.importMd.addEventListener("click", () => els.importFile.click());
+  els.importFile.addEventListener("change", importMarkdownBackup);
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
     deferredInstallPrompt = event;
@@ -356,6 +362,198 @@ async function copyCartSummary() {
   } catch (error) {
     showFormMessage("브라우저에서 복사를 허용하지 않았습니다.");
   }
+}
+
+function exportMarkdownBackup() {
+  const markdown = buildMarkdownBackup();
+  const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `cart-backup-${formatDateForFile(new Date())}.md`;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+  showFormMessage("마크다운 백업을 저장했습니다.");
+}
+
+async function importMarkdownBackup(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+
+  try {
+    const markdown = await file.text();
+    const backup = parseMarkdownBackup(markdown);
+    const confirmed =
+      state.items.length === 0 ||
+      window.confirm("현재 장바구니를 마크다운 파일 내용으로 바꿀까요?");
+    if (!confirmed) return;
+
+    state.items = backup.items;
+    state.budget = backup.budget;
+    state.discount = backup.discount;
+    state.checkoutAmount = backup.checkoutAmount;
+    resetForm();
+    persistAndRender();
+    showFormMessage(`${backup.items.length}개 상품을 불러왔습니다.`);
+  } catch (error) {
+    showFormMessage("마크다운 파일을 읽지 못했습니다. 표 형식을 확인해 주세요.");
+  }
+}
+
+function buildMarkdownBackup() {
+  const lines = [
+    "# 장바구니 계산기 백업",
+    "",
+    "- 형식: cart-calculator-md-v1",
+    `- 내보낸 날짜: ${new Date().toLocaleString("ko-KR")}`,
+    `- 예산: ${formatBackupMoney(state.budget)}`,
+    `- 할인/쿠폰: ${formatBackupMoney(state.discount)}`,
+    `- 계산대 금액: ${formatBackupMoney(state.checkoutAmount)}`,
+    "",
+    "## 상품",
+    "",
+    "| 상품명 | 바코드 | 가격 | 수량 | 메모 |",
+    "| --- | --- | ---: | ---: | --- |",
+  ];
+
+  state.items.forEach((item) => {
+    lines.push(
+      `| ${escapeMarkdownCell(item.name)} | ${escapeMarkdownCell(item.barcode)} | ${Math.round(item.price)} | ${formatQty(item.qty)} | ${escapeMarkdownCell(item.note)} |`
+    );
+  });
+
+  lines.push(
+    "",
+    "## 편집 안내",
+    "",
+    "- 가격, 예산, 할인/쿠폰, 계산대 금액은 원 단위 숫자로 수정할 수 있습니다.",
+    "- 상품 표의 열 이름은 유지해 주세요.",
+    "- 라벨 사진은 Markdown 백업에 포함되지 않습니다."
+  );
+
+  return `${lines.join("\n")}\n`;
+}
+
+function parseMarkdownBackup(markdown) {
+  return {
+    items: parseItemsTable(markdown),
+    budget: parseOptionalMoney(extractMarkdownField(markdown, "예산")),
+    discount: parseMoney(extractMarkdownField(markdown, "할인/쿠폰")),
+    checkoutAmount: parseOptionalMoney(extractMarkdownField(markdown, "계산대 금액")),
+  };
+}
+
+function parseItemsTable(markdown) {
+  const lines = markdown.split(/\r?\n/);
+  const headingIndex = lines.findIndex((line) => /^##\s+상품\s*$/.test(line.trim()));
+  if (headingIndex === -1) throw new Error("Items heading not found");
+
+  const tableLines = [];
+  for (let index = headingIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    if (/^##\s+/.test(line)) break;
+    if (line.startsWith("|")) tableLines.push(line);
+  }
+
+  if (tableLines.length < 2) throw new Error("Items table not found");
+
+  const headers = splitMarkdownRow(tableLines[0]);
+  const headerIndex = {
+    name: headers.indexOf("상품명"),
+    barcode: headers.indexOf("바코드"),
+    price: headers.indexOf("가격"),
+    qty: headers.indexOf("수량"),
+    note: headers.indexOf("메모"),
+  };
+
+  if (headerIndex.name < 0 || headerIndex.price < 0 || headerIndex.qty < 0) {
+    throw new Error("Required columns not found");
+  }
+
+  return tableLines
+    .slice(2)
+    .map((line) => splitMarkdownRow(line))
+    .filter((cells) => cells.some(Boolean))
+    .map((cells) => ({
+      id: makeId(),
+      createdAt: Date.now(),
+      name: cells[headerIndex.name]?.trim() || "이름 미정",
+      barcode: cells[headerIndex.barcode]?.trim() || "",
+      price: parseMoney(cells[headerIndex.price]),
+      qty: parseQty(cells[headerIndex.qty]),
+      note: cells[headerIndex.note]?.trim() || "",
+      photo: "",
+    }));
+}
+
+function extractMarkdownField(markdown, label) {
+  const pattern = new RegExp(`^-\\s*${escapeRegExp(label)}\\s*:\\s*(.*)$`, "mi");
+  const match = markdown.match(pattern);
+  return match ? match[1].trim() : "";
+}
+
+function splitMarkdownRow(row) {
+  let line = row.trim();
+  if (line.startsWith("|")) line = line.slice(1);
+  if (line.endsWith("|")) line = line.slice(0, -1);
+
+  const cells = [];
+  let current = "";
+  let escaping = false;
+  for (const char of line) {
+    if (escaping) {
+      current += char;
+      escaping = false;
+      continue;
+    }
+    if (char === "\\") {
+      escaping = true;
+      continue;
+    }
+    if (char === "|") {
+      cells.push(cleanMarkdownCell(current));
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+  if (escaping) current += "\\";
+  cells.push(cleanMarkdownCell(current));
+  return cells;
+}
+
+function cleanMarkdownCell(value) {
+  return value.trim().replace(/<br\s*\/?>/gi, "\n");
+}
+
+function escapeMarkdownCell(value) {
+  return String(value ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\|/g, "\\|")
+    .replace(/\r?\n/g, "<br>");
+}
+
+function parseOptionalMoney(value) {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed || trimmed === "-") return null;
+  return parseMoney(trimmed);
+}
+
+function parseQty(value) {
+  const number = Number(String(value ?? "").replace(/,/g, "").replace(/[^\d.]/g, ""));
+  return Number.isFinite(number) && number > 0 ? roundQty(number) : 1;
+}
+
+function formatBackupMoney(value) {
+  return value === null || value === undefined || value === "" ? "-" : String(Math.round(Number(value) || 0));
+}
+
+function formatDateForFile(date) {
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
 }
 
 async function promptInstall() {
@@ -634,4 +832,8 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value);
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
