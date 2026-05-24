@@ -32,7 +32,7 @@ python -m http.server 4173 --bind 127.0.0.1
 이 앱은 빌드 과정이 없는 정적 PWA라서 GitHub Pages에 바로 올릴 수 있습니다.
 
 1. GitHub 저장소의 루트에 이 폴더의 파일을 올립니다.
-2. 저장소 Settings > Pages에서 배포 소스를 기본 브랜치의 `/root`로 선택합니다.
+2. 포함된 GitHub Actions 워크플로가 루트의 정적 파일을 GitHub Pages로 배포합니다.
 3. 배포 후 `https://<계정>.github.io/<저장소>/` 주소로 접속합니다.
 
 사용자 사이트 저장소인 `<계정>.github.io`에 올리면 주소는 `https://<계정>.github.io/`가 됩니다.
