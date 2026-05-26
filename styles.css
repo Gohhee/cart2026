@@ -370,12 +370,57 @@ input:focus {
   background: var(--surface);
 }
 
-.budget > div:first-child,
+.budget {
+  --budget-accent: var(--mint);
+  --budget-progress: 0deg;
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.budget-detail {
+  min-width: 0;
+}
+
+.budget-detail-head,
 .difference > div:first-child {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
+}
+
+.budget-gauge {
+  display: grid;
+  width: 116px;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--budget-accent) var(--budget-progress), #e3e8e5 0deg);
+}
+
+.budget-gauge-center {
+  display: grid;
+  width: 82px;
+  aspect-ratio: 1;
+  align-content: center;
+  gap: 4px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.budget .budget-gauge-center strong {
+  color: var(--budget-accent);
+  font-size: 1.34rem;
+  line-height: 1;
+}
+
+.budget .budget-gauge-center span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
 }
 
 .budget span,
@@ -423,9 +468,18 @@ input:focus {
   background: var(--rose);
 }
 
+.budget[data-state="over"] {
+  --budget-accent: var(--rose);
+}
+
 .budget[data-state="over"] strong,
 .difference[data-state="over"] strong {
   color: var(--rose);
+}
+
+.budget[data-state="under"],
+.budget[data-state="match"] {
+  --budget-accent: var(--mint);
 }
 
 .budget[data-state="under"] .budget-meter span {
@@ -452,6 +506,30 @@ input:focus {
 .budget[data-state="match"] strong,
 .difference[data-state="match"] strong {
   color: var(--mint);
+}
+
+.budget-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.budget-breakdown div {
+  min-width: 0;
+}
+
+.budget-breakdown span,
+.budget-breakdown strong {
+  display: block;
+}
+
+.budget-breakdown strong {
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
 }
 
 .item-list {
@@ -631,6 +709,18 @@ input:focus {
   .entry-panel {
     position: static;
   }
+
+  .budget {
+    grid-template-columns: 100px minmax(0, 1fr);
+  }
+
+  .budget-gauge {
+    width: 100px;
+  }
+
+  .budget-gauge-center {
+    width: 72px;
+  }
 }
 
 @media (max-width: 560px) {
@@ -641,6 +731,14 @@ input:focus {
   .field-grid {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  .budget {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-gauge {
+    justify-self: center;
   }
 
   .item-card {

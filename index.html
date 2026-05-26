@@ -41,7 +41,7 @@
           </div>
         </section>
 
-        <section class="budget-band" aria-label="예산 비교">
+        <section class="budget-band" aria-label="예산 사용률">
           <div class="field compact">
             <label for="budget-amount">장바구니 예산</label>
             <div class="input-wrap">
@@ -50,12 +50,30 @@
             </div>
           </div>
           <div class="budget" id="budget-box" data-state="neutral">
-            <div>
-              <span id="budget-label">예산 비교</span>
-              <strong id="budget-value">0원</strong>
+            <div class="budget-gauge" id="budget-gauge" aria-hidden="true">
+              <div class="budget-gauge-center">
+                <strong id="budget-percent">0%</strong>
+                <span>사용률</span>
+              </div>
             </div>
-            <p id="budget-note">예산을 입력하면 지금 담은 금액과 비교됩니다.</p>
-            <div class="budget-meter" aria-hidden="true"><span id="budget-meter-fill"></span></div>
+            <div class="budget-detail">
+              <div class="budget-detail-head">
+                <span id="budget-label">예산 비교</span>
+                <strong id="budget-value">0원</strong>
+              </div>
+              <p id="budget-note">예산을 입력하면 지금 담은 금액과 비교됩니다.</p>
+              <div class="budget-meter" aria-hidden="true"><span id="budget-meter-fill"></span></div>
+              <div class="budget-breakdown" aria-label="예산 금액 요약">
+                <div>
+                  <span>담은 금액</span>
+                  <strong id="budget-spent">0원</strong>
+                </div>
+                <div>
+                  <span>설정 예산</span>
+                  <strong id="budget-limit">0원</strong>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

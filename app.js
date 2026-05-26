@@ -37,6 +37,10 @@ function mapElements() {
     "budget-value",
     "budget-note",
     "budget-meter-fill",
+    "budget-gauge",
+    "budget-percent",
+    "budget-spent",
+    "budget-limit",
     "discount",
     "checkout-amount",
     "difference-box",
@@ -644,13 +648,22 @@ function renderBudget() {
     els.budgetValue.textContent = "0원";
     els.budgetNote.textContent = "예산을 입력하면 지금 담은 금액과 비교됩니다.";
     els.budgetMeterFill.style.width = "0%";
+    els.budgetGauge.style.setProperty("--budget-progress", "0deg");
+    els.budgetPercent.textContent = "0%";
+    els.budgetSpent.textContent = formatWon(estimated);
+    els.budgetLimit.textContent = "0원";
     return;
   }
 
   const remaining = budget - estimated;
   const absRemaining = Math.abs(remaining);
   const percent = budget > 0 ? (estimated / budget) * 100 : 0;
-  els.budgetMeterFill.style.width = `${Math.min(100, percent)}%`;
+  const cappedPercent = Math.min(100, percent);
+  els.budgetMeterFill.style.width = `${cappedPercent}%`;
+  els.budgetGauge.style.setProperty("--budget-progress", `${(cappedPercent / 100) * 360}deg`);
+  els.budgetPercent.textContent = formatPercent(percent);
+  els.budgetSpent.textContent = formatWon(estimated);
+  els.budgetLimit.textContent = formatWon(budget);
 
   if (remaining < 0) {
     box.dataset.state = "over";
